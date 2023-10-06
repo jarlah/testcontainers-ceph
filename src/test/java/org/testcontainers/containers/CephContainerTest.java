@@ -20,7 +20,7 @@ public class CephContainerTest {
     public void testBasicUsage() throws Exception {
         try (
             // minioContainer {
-            CephContainer container = new CephContainer("quay.io/ceph/demo:latest");
+            CephContainer container = new CephContainer("quay.io/ceph/demo:latest-quincy");
             // }
         ) {
             container.start();

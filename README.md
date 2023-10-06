@@ -64,6 +64,6 @@ or if you're using Gradle:
 
 ```groovy
 dependencies {
-    testImplementation 'io.github.jarlah:testcontainers-ceph:0.1-SNAPSHOT'
+    testImplementation 'io.github.jarlah:testcontainers-ceph:<VERSION>'
 }
 ```

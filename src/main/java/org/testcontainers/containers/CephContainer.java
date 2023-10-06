@@ -19,6 +19,7 @@ import java.time.Duration;
  * </ul>
  */
 public class CephContainer extends GenericContainer<CephContainer> {
+    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("quay.io/ceph/demo");
 
     private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "accessKey";
 
@@ -42,6 +43,7 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     public CephContainer(final DockerImageName dockerImageName) {
         super(dockerImageName);
+        dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
     }
 
     @Override
