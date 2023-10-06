@@ -1,6 +1,8 @@
 Testcontainers Ceph
 ===
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.jarlah/testcontainers-ceph/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.jarlah/testcontainers-ceph)
+
 A [Testcontainers](https://www.testcontainers.org/) implementation for [Ceph](https://ceph.io).
 
 How to use
