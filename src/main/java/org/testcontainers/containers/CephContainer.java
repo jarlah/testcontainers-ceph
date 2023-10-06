@@ -57,14 +57,14 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
             "CEPH_DEMO_ACCESS_KEY",
-            this.getCephAccessKey() != null
-                ? this.getCephAccessKey()
+            this.cephAccessKey != null
+                ? this.cephAccessKey
                 : (this.cephAccessKey = CEPH_RGW_DEFAULT_ACCESS_KEY)
         );
         addEnv(
             "CEPH_DEMO_SECRET_KEY",
-            this.getCephSecretKey() != null
-                ? this.getCephSecretKey()
+            this.cephSecretKey != null
+                ? this.cephSecretKey
                 : (this.cephSecretKey = CEPH_RGW_DEFAULT_SECRET_KEY)
         );
         addEnv("NETWORK_AUTO_DETECT", "1");
@@ -87,7 +87,7 @@ public class CephContainer extends GenericContainer<CephContainer> {
     }
 
     public int getCephPort() {
-        return getMappedPort(8080);
+        return getMappedPort(CEPH_RGW_DEFAULT_PORT);
     }
 
     public URI getCephUrl() throws URISyntaxException {
