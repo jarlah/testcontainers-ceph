@@ -43,7 +43,7 @@ public class CephContainerTest {
             // }
 
             s3client.createBucket("test-bucket");
-            assertThat(s3client.doesBucketExistV2("test-bucket"));
+            assertThat(s3client.doesBucketExistV2("test-bucket")).isTrue();
 
             URL file = this.getClass().getResource("/object_to_upload.txt");
             assertThat(file).isNotNull();

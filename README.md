@@ -23,12 +23,9 @@ CephContainer container = new CephContainer("quay.io/ceph/demo");
 @Container
 CephContainer container = new CephContainer(DockerImageName.parse("quay.io/ceph/demo"));
 ```
-or
-```java
-@Container
-CephContainer container = new CephContainer("quay.io/ceph/demo");
-```
-or
+
+or override with a non-standard, but yet compliant image, for ex if you make a new image based on quay.io/ceph/demo
+
 ```java
 @Container
 CephContainer container = new CephContainer(
