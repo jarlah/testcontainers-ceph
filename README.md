@@ -44,7 +44,24 @@ CephContainer container = new CephContainer()
     .withCephAccessKey("secretKey");
 ```
 
-Setup
+## How to use it?
 ---
 
-TODO
+### Include it into your project dependencies
+
+If you're using Maven:
+```xml
+<dependency>
+  <groupId>io.github.jarlah</groupId>
+  <artifactId>testcontainers-ceph</artifactId>
+  <version>0.1-SNAPSHOT</version>
+</dependency>
+```
+
+or if you're using Gradle:
+
+```groovy
+dependencies {
+    testImplementation 'io.github.jarlah:testcontainers-ceph:0.1-SNAPSHOT'
+}
+```
