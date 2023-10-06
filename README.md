@@ -14,7 +14,7 @@ You can use the `@Container` annotation to start a Ceph container.
 
 ```java
 @Container
-CephContainer container = new CephContainer("quay.io/ceph/demo");
+CephContainer container = new CephContainer();
 ```
 
 ### Custom image

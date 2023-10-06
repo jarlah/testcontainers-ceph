@@ -20,10 +20,13 @@ public class CephContainerTest {
     public void testBasicUsage() throws Exception {
         try (
             // minioContainer {
-            CephContainer container = new CephContainer("quay.io/ceph/demo:latest-quincy");
+            CephContainer container = new CephContainer();
             // }
         ) {
             container.start();
+
+            assertThat(container.getCephAccessKey()).isNotBlank();
+            assertThat(container.getCephSecretKey()).isNotBlank();
 
             // configuringClient {
             AWSCredentials credentials = new BasicAWSCredentials(
@@ -56,16 +59,7 @@ public class CephContainerTest {
     }
 
     @Test
-    public void testDefaultUserPassword() {
-        try (CephContainer container = new CephContainer("quay.io/ceph/demo:latest")) {
-            container.start();
-            assertThat(container.getCephAccessKey()).isNotBlank();
-            assertThat(container.getCephSecretKey()).isNotBlank();
-        }
-    }
-
-    @Test
-    public void testOverwriteUserPassword() {
+    public void testOverrides() {
         try (
             // cephOverrides {
             CephContainer container = new CephContainer("quay.io/ceph/demo:latest")

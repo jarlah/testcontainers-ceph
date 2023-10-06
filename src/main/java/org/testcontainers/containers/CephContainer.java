@@ -9,9 +9,11 @@ import java.time.Duration;
 
 /**
  * Testcontainers implementation for Ceph.
- * <p>
+ * <br />
  * Supported image: {@code quay.io/ceph/demo}
- * <p>
+ * <br />
+ * Defaults to {@code quay.io/ceph/demo:latest-quincy} aka v17 of Ceph
+ * <br />
  * Exposed ports:
  * <ul>
  *     <li>Ceph: 8080</li>
@@ -20,6 +22,8 @@ import java.time.Duration;
  */
 public class CephContainer extends GenericContainer<CephContainer> {
     private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("quay.io/ceph/demo");
+
+    private static final String DEFAULT_IMAGE_TAG = "latest-quincy";
 
     private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "accessKey";
 
@@ -36,6 +40,10 @@ public class CephContainer extends GenericContainer<CephContainer> {
     private String cephAccessKey;
 
     private String cephSecretKey;
+
+    public CephContainer() {
+        this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_IMAGE_TAG));
+    }
 
     public CephContainer(final String dockerImageName) {
         this(DockerImageName.parse(dockerImageName));
