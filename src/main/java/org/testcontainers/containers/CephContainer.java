@@ -1,7 +1,5 @@
 package org.testcontainers.containers;
 
-import lombok.Getter;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -23,10 +21,11 @@ import java.util.Set;
  *     <li>Monitor: 3300</li>
  * </ul>
  */
-@Getter
 public class CephContainer extends GenericContainer<CephContainer> {
 
-    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("quay.io/ceph/demo");
+    private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "accessKey";
+
+    private static final String CEPH_RGW_DEFAULT_SECRET_KEY = "secretKey";
 
     private static final Integer CEPH_MON_DEFAULT_PORT = 3300;
 
@@ -58,15 +57,15 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
             "CEPH_DEMO_ACCESS_KEY",
-            this.cephAccessKey != null
-                ? this.cephAccessKey
-                : (this.cephAccessKey = RandomStringUtils.randomAlphanumeric(32))
+            this.getCephAccessKey() != null
+                ? this.getCephAccessKey()
+                : (this.cephAccessKey = CEPH_RGW_DEFAULT_ACCESS_KEY)
         );
         addEnv(
             "CEPH_DEMO_SECRET_KEY",
-            this.cephSecretKey != null
-                ? this.cephSecretKey
-                : (this.cephSecretKey = RandomStringUtils.randomAlphanumeric(32))
+            this.getCephSecretKey() != null
+                ? this.getCephSecretKey()
+                : (this.cephSecretKey = CEPH_RGW_DEFAULT_SECRET_KEY)
         );
         addEnv("NETWORK_AUTO_DETECT", "1");
         addEnv("CEPH_DAEMON", "DEMO");
@@ -93,5 +92,13 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     public URI getCephUrl() throws URISyntaxException {
         return new URI(String.format("http://%s:%s", this.getHost(), getCephPort()));
+    }
+
+    public String getCephAccessKey() {
+        return cephAccessKey;
+    }
+
+    public String getCephSecretKey() {
+        return cephSecretKey;
     }
 }

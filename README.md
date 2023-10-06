@@ -21,10 +21,18 @@ CephContainer container = new CephContainer();
 @Container
 CephContainer container = new CephContainer(DockerImageName.parse("quay.io/ceph/demo:latest"));
 ```
-
+or
 ```java
 @Container
 CephContainer container = new CephContainer("quay.io/ceph/demo:latest");
+```
+or
+```java
+@Container
+CephContainer container = new CephContainer(
+        DockerImageName.parse("our-prebuilt-ceph-demo-image")
+            .asCompatibleSubstituteFor("quay.io/ceph/demo")
+);
 ```
 
 ### Configure access key and secret key
