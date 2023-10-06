@@ -16,7 +16,7 @@
     </licenses>
     <developers>
         <developer>
-            <id>Jarl André Hübenthal</id>
+            <id>jarlah</id>
             <name>Jarl André Hübenthal</name>
             <email>jarlah@pm.me</email>
         </developer>
@@ -83,7 +83,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>testcontainers-ceph</finalName>
+        <finalName>${project.groupId}:${project.artifactId}</finalName>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -166,7 +166,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.1.0</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
