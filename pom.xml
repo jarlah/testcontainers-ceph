@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.jarlah</groupId>
     <artifactId>testcontainers-ceph</artifactId>
-    <version>0.4-SNAPSHOT</version>
+    <version>0.4</version>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Testcontainers Ceph</description>
@@ -128,7 +128,7 @@
         <connection>scm:git:https://github.com/jarlah/testcontainers-ceph.git</connection>
         <url>https://github.com/jarlah/testcontainers-ceph.git</url>
         <developerConnection>scm:git:https://github.com/jarlah/testcontainers-ceph.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>0.4</tag>
     </scm>
     <profiles>
         <profile>
