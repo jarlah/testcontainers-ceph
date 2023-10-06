@@ -12,19 +12,19 @@ You can use the `@Container` annotation to start a Ceph container.
 
 ```java
 @Container
-CephContainer container = new CephContainer();
+CephContainer container = new CephContainer("quay.io/ceph/demo");
 ```
 
 ### Custom image
 
 ```java
 @Container
-CephContainer container = new CephContainer(DockerImageName.parse("quay.io/ceph/demo:latest"));
+CephContainer container = new CephContainer(DockerImageName.parse("quay.io/ceph/demo"));
 ```
 or
 ```java
 @Container
-CephContainer container = new CephContainer("quay.io/ceph/demo:latest");
+CephContainer container = new CephContainer("quay.io/ceph/demo");
 ```
 or
 ```java
@@ -39,7 +39,7 @@ CephContainer container = new CephContainer(
 
 ```java
 @Container
-CephContainer container = new CephContainer()
+CephContainer container = new CephContainer("quay.io/ceph/demo")
     .withCephAccessKey("accessKey")
     .withCephAccessKey("secretKey");
 ```
@@ -54,7 +54,7 @@ If you're using Maven:
 <dependency>
   <groupId>io.github.jarlah</groupId>
   <artifactId>testcontainers-ceph</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>VERSION</version>
 </dependency>
 ```
 
