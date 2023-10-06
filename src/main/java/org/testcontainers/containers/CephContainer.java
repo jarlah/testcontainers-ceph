@@ -6,9 +6,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Testcontainers implementation for Ceph.
@@ -35,8 +32,6 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_END_START = ".*/opt/ceph-container/bin/demo: SUCCESS.*";
 
-    private static final Set<String> CEPH_DEMO_DAEMONS = new HashSet<>(Collections.singletonList("all"));
-
     private String cephAccessKey;
 
     private String cephSecretKey;
@@ -53,7 +48,6 @@ public class CephContainer extends GenericContainer<CephContainer> {
     public void configure() {
         addExposedPorts(CEPH_MON_DEFAULT_PORT, CEPH_RGW_DEFAULT_PORT);
 
-        addEnv("DEMO_DAEMONS", String.join(",", CEPH_DEMO_DAEMONS));
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
             "CEPH_DEMO_ACCESS_KEY",
@@ -73,7 +67,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addEnv("MON_IP", "127.0.0.1");
         addEnv("RGW_NAME", "localhost");
 
-        setWaitStrategy(Wait.forLogMessage(CEPH_END_START, 1).withStartupTimeout(Duration.ofMinutes(5)));
+        setWaitStrategy(Wait.forLogMessage(CEPH_END_START, 1)
+                .withStartupTimeout(Duration.ofMinutes(5)));
     }
 
     public CephContainer withCephAccessKey(String cephAccessKey) {
