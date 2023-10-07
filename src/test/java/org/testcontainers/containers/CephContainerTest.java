@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.junit.Test;
 
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
@@ -25,51 +26,59 @@ public class CephContainerTest {
         ) {
             container.start();
 
-            assertThat(container.getCephAccessKey()).isNotBlank();
-            assertThat(container.getCephSecretKey()).isNotBlank();
+            assertThat(container.getCephAccessKey()).isEqualTo("accessKey");
+            assertThat(container.getCephSecretKey()).isEqualTo("secretKey");
+            assertThat(container.getCephBucket()).isEqualTo("test-bucket");
 
-            // configuringClient {
-            AWSCredentials credentials = new BasicAWSCredentials(
-                container.getCephAccessKey(),
-                container.getCephSecretKey()
-            );
-            AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-                container.getCephUrl().toString(),
-                ""
-            );
-            AmazonS3 s3client = AmazonS3ClientBuilder
-                .standard()
-                .withEndpointConfiguration(endpointConfiguration)
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withPathStyleAccessEnabled(true)
-                .build();
-            // }
+            AmazonS3 s3client = getS3client(container);
 
-            s3client.createBucket("test-bucket");
-            assertThat(s3client.doesBucketExistV2("test-bucket")).isTrue();
+            assertThat(s3client.doesBucketExistV2(container.getCephBucket())).isTrue();
 
             URL file = this.getClass().getResource("/object_to_upload.txt");
             assertThat(file).isNotNull();
-            s3client.putObject("test-bucket", "my-objectname", file.getFile());
+            s3client.putObject(container.getCephBucket(), "my-objectname", file.getFile());
 
-            List<S3ObjectSummary> objets = s3client.listObjectsV2("test-bucket").getObjectSummaries();
+            List<S3ObjectSummary> objets = s3client.listObjectsV2(container.getCephBucket()).getObjectSummaries();
             assertThat(objets.size()).isEqualTo(1);
             assertThat(objets.get(0).getKey()).isEqualTo("my-objectname");
         }
     }
 
     @Test
-    public void testOverrides() {
+    public void testOverrides() throws URISyntaxException {
         try (
             // cephOverrides {
             CephContainer container = new CephContainer("quay.io/ceph/demo:latest")
                 .withCephAccessKey("testuser123")
-                .withCephSecretKey("testpassword123");
+                .withCephSecretKey("testpassword123")
+                .withCephBucket("testbucket123")
             // }
         ) {
             container.start();
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
             assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
+            assertThat(container.getCephBucket()).isEqualTo("testbucket123");
+            AmazonS3 s3client = getS3client(container);
+            assertThat(s3client.doesBucketExistV2("testbucket123")).isTrue();
         }
     }
+
+    // configuringClient {
+    private static AmazonS3 getS3client(CephContainer container) throws URISyntaxException {
+        AWSCredentials credentials = new BasicAWSCredentials(
+                container.getCephAccessKey(),
+                container.getCephSecretKey()
+        );
+        AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
+                container.getCephUrl().toString(),
+                ""
+        );
+        return AmazonS3ClientBuilder
+                .standard()
+                .withEndpointConfiguration(endpointConfiguration)
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withPathStyleAccessEnabled(true)
+                .build();
+    }
+    // }
 }
