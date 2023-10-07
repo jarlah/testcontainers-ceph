@@ -9,11 +9,11 @@ import java.time.Duration;
 
 /**
  * Testcontainers implementation for Ceph.
- * <br />
+ * <br>
  * Supported image: {@code quay.io/ceph/demo}
- * <br />
+ * <br>
  * Defaults to {@code quay.io/ceph/demo:latest-quincy} aka v17 of Ceph
- * <br />
+ * <br>
  * Exposed ports:
  * <ul>
  *     <li>Ceph: 8080</li>
