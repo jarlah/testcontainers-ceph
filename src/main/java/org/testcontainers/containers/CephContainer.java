@@ -35,11 +35,15 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_DEMO_UID = "admin";
 
+    private static final String CEPH_DEMO_BUCKET = "test-bucket";
+
     private static final String CEPH_END_START = ".*/opt/ceph-container/bin/demo: SUCCESS.*";
 
     private String cephAccessKey;
 
     private String cephSecretKey;
+
+    private String cephBucket;
 
     public CephContainer() {
         this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_IMAGE_TAG));
@@ -60,6 +64,12 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
+            "CEPH_DEMO_BUCKET",
+            this.cephBucket != null
+                ? this.cephBucket
+                : (this.cephBucket = CEPH_DEMO_BUCKET)
+        );
+        addEnv(
             "CEPH_DEMO_ACCESS_KEY",
             this.cephAccessKey != null
                 ? this.cephAccessKey
@@ -71,10 +81,10 @@ public class CephContainer extends GenericContainer<CephContainer> {
                 ? this.cephSecretKey
                 : (this.cephSecretKey = CEPH_RGW_DEFAULT_SECRET_KEY)
         );
-        addEnv("NETWORK_AUTO_DETECT", "1");
-        addEnv("CEPH_DAEMON", "DEMO");
         addEnv("CEPH_PUBLIC_NETWORK", "0.0.0.0/0");
+        // This needs to be 127.0.0.1, if not the demo image will not start properly
         addEnv("MON_IP", "127.0.0.1");
+        // This is important because without it, we cant access ceph from http://localhost:<PORT>
         addEnv("RGW_NAME", "localhost");
 
         setWaitStrategy(Wait.forLogMessage(CEPH_END_START, 1)
@@ -88,6 +98,11 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     public CephContainer withCephSecretKey(String cephSecretKey) {
         this.cephSecretKey = cephSecretKey;
+        return this;
+    }
+
+    public CephContainer withCephBucket(String cephBucket) {
+        this.cephBucket = cephBucket;
         return this;
     }
 
@@ -105,5 +120,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     public String getCephSecretKey() {
         return cephSecretKey;
+    }
+
+    public String getCephBucket() {
+        return cephBucket;
     }
 }
