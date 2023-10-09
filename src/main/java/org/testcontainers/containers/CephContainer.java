@@ -25,19 +25,19 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String DEFAULT_IMAGE_TAG = "latest-quincy";
 
-    private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "accessKey";
+    private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "demo";
 
-    private static final String CEPH_RGW_DEFAULT_SECRET_KEY = "secretKey";
+    private static final String CEPH_RGW_DEFAULT_SECRET_KEY = "demo";
 
     private static final Integer CEPH_MON_DEFAULT_PORT = 3300;
 
     private static final Integer CEPH_RGW_DEFAULT_PORT = 8080;
 
-    private static final String CEPH_DEMO_UID = "admin";
+    private static final String CEPH_DEMO_UID = "demo";
 
-    private static final String CEPH_DEMO_BUCKET = "test-bucket";
+    private static final String CEPH_DEMO_BUCKET = "demo";
 
-    private static final String CEPH_END_START = ".*/opt/ceph-container/bin/demo: SUCCESS.*";
+    private static final String CEPH_END_START_REGEX_FORMAT = ".*Bucket 's3://%s/' created\n.*";
 
     private String cephAccessKey;
 
@@ -87,7 +87,7 @@ public class CephContainer extends GenericContainer<CephContainer> {
         // This is important because without it, we cant access ceph from http://localhost:<PORT>
         addEnv("RGW_NAME", "localhost");
 
-        setWaitStrategy(Wait.forLogMessage(CEPH_END_START, 1)
+        setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
                 .withStartupTimeout(Duration.ofMinutes(5)));
     }
 
