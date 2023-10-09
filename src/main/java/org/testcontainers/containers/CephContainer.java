@@ -35,9 +35,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_DEMO_UID = "admin";
 
-    private static final String CEPH_DEMO_BUCKET = "test-bucket";
+    private static final String CEPH_END_START_WITHOUT_BUCKET = ".*\"user\": \"admin\",\n";
 
-    private static final String CEPH_END_START = ".*/opt/ceph-container/bin/demo: SUCCESS.*";
+    private static final String CEPH_END_START_WITH_BUCKET = ".*Bucket 's3://.*/' created\n.*";
 
     private String cephAccessKey;
 
@@ -63,12 +63,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addExposedPorts(CEPH_MON_DEFAULT_PORT, CEPH_RGW_DEFAULT_PORT);
 
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
-        addEnv(
-            "CEPH_DEMO_BUCKET",
-            this.cephBucket != null
-                ? this.cephBucket
-                : (this.cephBucket = CEPH_DEMO_BUCKET)
-        );
+        if (this.cephBucket != null) {
+            addEnv("CEPH_DEMO_BUCKET", this.cephBucket);
+        }
         addEnv(
             "CEPH_DEMO_ACCESS_KEY",
             this.cephAccessKey != null
@@ -87,7 +84,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
         // This is important because without it, we cant access ceph from http://localhost:<PORT>
         addEnv("RGW_NAME", "localhost");
 
-        setWaitStrategy(Wait.forLogMessage(CEPH_END_START, 1)
+        String logMessage = this.cephBucket != null ? CEPH_END_START_WITH_BUCKET : CEPH_END_START_WITHOUT_BUCKET;
+        setWaitStrategy(Wait.forLogMessage(logMessage, 1)
                 .withStartupTimeout(Duration.ofMinutes(5)));
     }
 
