@@ -1,6 +1,17 @@
 version: "3"
 
+# sudo nano /private/etc/hosts
+# add
+# 127.0.0.1       ceph-demo
+# save and exit
+
 services:
+  nginx:
+    build: nginx
+    ports:
+      - "8443:443"
+    depends_on:
+      - ceph-demo
 
   ceph-demo:
     image: quay.io/ceph/demo:latest-quincy
@@ -11,6 +22,7 @@ services:
       CEPH_DEMO_BUCKET: "demo"
       CEPH_PUBLIC_NETWORK: "0.0.0.0/0"
       MON_IP: "127.0.0.1"
-      RGW_NAME: "localhost"
+      RGW_NAME: "ceph-demo"
+      DEBUG: "verbose"
     ports:
       - "8080:8080"
