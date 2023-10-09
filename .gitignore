@@ -1,2 +1,4 @@
 .idea
 target/
+# the tests copy the demo file from the container
+demo-script
