@@ -91,6 +91,18 @@ public class CephContainer extends GenericContainer<CephContainer> {
                 .withStartupTimeout(Duration.ofMinutes(5)));
     }
 
+    public CephContainer withSslDisabled() {
+        return super.withCreateContainerCmdModifier((cmd) -> {
+           cmd.withEntrypoint(
+                   "bash",
+                   "-c",
+                   "sed -i '/^rgw frontends = .*/a rgw verify ssl = false\\\n" +
+                           "rgw crypt require ssl = false' /opt/ceph-container/bin/demo;\n" +
+                           "/opt/ceph-container/bin/demo;"
+           );
+        });
+    }
+
     public CephContainer withCephAccessKey(String cephAccessKey) {
         this.cephAccessKey = cephAccessKey;
         return this;
