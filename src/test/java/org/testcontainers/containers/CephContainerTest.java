@@ -87,32 +87,17 @@ public class CephContainerTest {
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
             S3Client s3client = getS3client(container);
             s3client.headBucket(HeadBucketRequest.builder().bucket("testbucket123").build());
-            PutObjectResponse sseCPutObjectResponse = s3client.putObject(getSSECPutObjectRequest("testbucket123", "some-objectname"), RequestBody.fromFile(getTestFile()));
+            PutObjectResponse sseCPutObjectResponse = s3client.putObject(
+                    getSSECPutObjectRequest("testbucket123", "some-objectname"),
+                    RequestBody.fromFile(getTestFile())
+            );
             assertThat(sseCPutObjectResponse).isNotNull();
-            PutObjectResponse normalPutObjectResponse = s3client.putObject(PutObjectRequest.builder().key("some-other-key").bucket("testbucket123").build(), RequestBody.fromFile(getTestFile()));
+            PutObjectResponse normalPutObjectResponse = s3client.putObject(
+                    PutObjectRequest.builder().key("some-other-key").bucket("testbucket123").build(),
+                    RequestBody.fromFile(getTestFile())
+            );
             assertThat(normalPutObjectResponse).isNotNull();
         }
-    }
-
-    private PutObjectRequest getSSECPutObjectRequest(String bucket, String key) throws NoSuchAlgorithmException, InvalidKeySpecException, URISyntaxException {
-        SecretKey secretKey = getPasswordBasedKey("testtesttesttesttesttest123".toCharArray());
-        byte[] customerKeyBytes = secretKey.getEncoded();
-        String customerKeyMD5;
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] md5Bytes = md.digest(customerKeyBytes);
-            customerKeyMD5 = Base64.getEncoder().encodeToString(md5Bytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("MD5 algorithm not found", e);
-        }
-        String sseCKeyBase64 = Base64.getEncoder().encodeToString(customerKeyBytes);
-        return PutObjectRequest.builder()
-                .key(key)
-                .bucket(bucket)
-                .sseCustomerAlgorithm("AES256")
-                .sseCustomerKey(sseCKeyBase64)
-                .sseCustomerKeyMD5(customerKeyMD5)
-                .build();
     }
 
     @Test
@@ -140,6 +125,7 @@ public class CephContainerTest {
 
 
     // configuringClient {
+
     private static S3Client getS3client(CephContainer container) throws URISyntaxException {
         final AwsBasicCredentials credentials = AwsBasicCredentials.create(
                 container.getCephAccessKey(),
@@ -155,13 +141,12 @@ public class CephContainerTest {
                         .build())
                 .build();
     }
-
     // }
+
     private static String getDemoScriptFromContainer(CephContainer container) throws IOException {
         container.copyFileFromContainer("/opt/ceph-container/bin/demo", "demo-script");
         return new String(Files.readAllBytes(Paths.get("demo-script")));
     }
-
     @NotNull
     private File getTestFile() throws URISyntaxException {
         return Paths.get(Objects.requireNonNull(this.getClass().getResource("/object_to_upload.txt")).toURI()).toFile();
@@ -173,5 +158,26 @@ public class CephContainerTest {
         random.nextBytes(salt);
         PBEKeySpec pbeKeySpec = new PBEKeySpec(password, salt, 1000, 256);
         return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(pbeKeySpec);
+    }
+
+    private static PutObjectRequest getSSECPutObjectRequest(String bucket, String key) throws NoSuchAlgorithmException, InvalidKeySpecException, URISyntaxException {
+        SecretKey secretKey = getPasswordBasedKey("testtesttesttesttesttest123".toCharArray());
+        byte[] customerKeyBytes = secretKey.getEncoded();
+        String customerKeyMD5;
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] md5Bytes = md.digest(customerKeyBytes);
+            customerKeyMD5 = Base64.getEncoder().encodeToString(md5Bytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 algorithm not found", e);
+        }
+        String sseCKeyBase64 = Base64.getEncoder().encodeToString(customerKeyBytes);
+        return PutObjectRequest.builder()
+                .key(key)
+                .bucket(bucket)
+                .sseCustomerAlgorithm("AES256")
+                .sseCustomerKey(sseCKeyBase64)
+                .sseCustomerKeyMD5(customerKeyMD5)
+                .build();
     }
 }
