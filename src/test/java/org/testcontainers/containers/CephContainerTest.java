@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.junit.Test;
+import org.testcontainers.utility.DockerImageName;
 
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -53,6 +54,29 @@ public class CephContainerTest {
                 .withCephSecretKey("testpassword123")
                 .withCephBucket("testbucket123")
             // }
+        ) {
+            container.start();
+            assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
+            assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
+            assertThat(container.getCephBucket()).isEqualTo("testbucket123");
+            AmazonS3 s3client = getS3client(container);
+            assertThat(s3client.doesBucketExistV2("testbucket123")).isTrue();
+        }
+    }
+
+    @Test
+    public void testSpecificDaemonImage() throws URISyntaxException {
+        DockerImageName daemonImage =
+                DockerImageName.parse("quay.io/ceph/daemon:v7.0.3-stable-7.0-quincy-centos-stream8-x86_64")
+                        .asCompatibleSubstituteFor("quay.io/ceph/demo");
+        try (
+                // cephOverrides {
+                CephContainer container = new CephContainer(daemonImage)
+                        .withCephAccessKey("testuser123")
+                        .withCephSecretKey("testpassword123")
+                        .withCephBucket("testbucket123")
+                        .withCommand("demo")
+                // }
         ) {
             container.start();
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
