@@ -1,21 +1,24 @@
 package org.testcontainers.containers;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,17 +42,16 @@ public class CephContainerTest {
             assertThat(container.getCephSecretKey()).isEqualTo("demo");
             assertThat(container.getCephBucket()).isEqualTo("demo");
 
-            AmazonS3 s3client = getS3client(container);
+            S3Client s3client = getS3client(container);
 
-            assertThat(s3client.doesBucketExistV2("demo")).isTrue();
+            s3client.headBucket(HeadBucketRequest.builder().bucket("demo").build());
 
-            URL file = this.getClass().getResource("/object_to_upload.txt");
-            assertThat(file).isNotNull();
-            s3client.putObject("demo", "my-objectname", file.getFile());
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("demo").key("my-objectname").build();
+            s3client.putObject(putObjectRequest, RequestBody.fromFile(getTestFile()));
 
-            List<S3ObjectSummary> objets = s3client.listObjectsV2("demo").getObjectSummaries();
-            assertThat(objets.size()).isEqualTo(1);
-            assertThat(objets.get(0).getKey()).isEqualTo("my-objectname");
+            ListObjectsV2Response objets = s3client.listObjectsV2((builder) -> builder.bucket("demo"));
+            assertThat(objets.contents().size()).isEqualTo(1);
+            assertThat(objets.contents().get(0).key()).isEqualTo("my-objectname");
         }
     }
 
@@ -74,8 +76,10 @@ public class CephContainerTest {
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
             assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
-            AmazonS3 s3client = getS3client(container);
-            assertThat(s3client.doesBucketExistV2("testbucket123")).isTrue();
+            S3Client s3client = getS3client(container);
+            s3client.headBucket(HeadBucketRequest.builder().bucket("testbucket123").build());
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("demo").key("my-objectname").build();
+            s3client.putObject(putObjectRequest, RequestBody.fromFile(getTestFile()));
         }
     }
 
@@ -97,33 +101,37 @@ public class CephContainerTest {
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
             assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
-            AmazonS3 s3client = getS3client(container);
-            assertThat(s3client.doesBucketExistV2("testbucket123")).isTrue();
+            S3Client s3client = getS3client(container);
+            s3client.headBucket(HeadBucketRequest.builder().bucket("testbucket123").build());
         }
     }
 
-    // configuringClient {
 
-    private static AmazonS3 getS3client(CephContainer container) throws URISyntaxException {
-        AWSCredentials credentials = new BasicAWSCredentials(
+    // configuringClient {
+    private static S3Client getS3client(CephContainer container) throws URISyntaxException {
+        final AwsBasicCredentials credentials = AwsBasicCredentials.create(
                 container.getCephAccessKey(),
                 container.getCephSecretKey()
         );
-        AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-                container.getCephUrl().toString(),
-                ""
-        );
-        return AmazonS3ClientBuilder
-                .standard()
-                .withEndpointConfiguration(endpointConfiguration)
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withPathStyleAccessEnabled(true)
+        final StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(credentials);
+        return S3Client.builder()
+                .credentialsProvider(credentialsProvider)
+                .endpointOverride(container.getCephUrl())
+                .region(Region.US_EAST_1)
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build())
                 .build();
     }
-    // }
 
+    // }
     private static String getDemoScriptFromContainer(CephContainer container) throws IOException {
         container.copyFileFromContainer("/opt/ceph-container/bin/demo", "demo-script");
         return new String(Files.readAllBytes(Paths.get("demo-script")));
+    }
+
+    @NotNull
+    private File getTestFile() throws URISyntaxException {
+        return Paths.get(Objects.requireNonNull(this.getClass().getResource("/object_to_upload.txt")).toURI()).toFile();
     }
 }
