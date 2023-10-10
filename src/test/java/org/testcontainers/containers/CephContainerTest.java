@@ -78,7 +78,7 @@ public class CephContainerTest {
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
             S3Client s3client = getS3client(container);
             s3client.headBucket(HeadBucketRequest.builder().bucket("testbucket123").build());
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("demo").key("my-objectname").build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("testbucket123").key("my-objectname").build();
             s3client.putObject(putObjectRequest, RequestBody.fromFile(getTestFile()));
         }
     }
