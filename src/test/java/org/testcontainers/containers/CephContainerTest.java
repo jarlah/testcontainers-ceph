@@ -30,6 +30,7 @@ import java.util.Base64;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class CephContainerTest {
 
@@ -61,6 +62,15 @@ public class CephContainerTest {
             ListObjectsV2Response objets = s3client.listObjectsV2((builder) -> builder.bucket("demo"));
             assertThat(objets.contents().size()).isEqualTo(1);
             assertThat(objets.contents().get(0).key()).isEqualTo("my-objectname");
+
+            assertThatThrownBy(() -> {
+                s3client.putObject(
+                        getSSECPutObjectRequest("demo", "some-objectname"),
+                        RequestBody.fromFile(getTestFile())
+                );
+            })
+                    .isInstanceOf(software.amazon.awssdk.services.s3.model.S3Exception.class)
+                    .hasMessageContaining("Service: S3, Status Code: 400, Request ID: ");
         }
     }
 
