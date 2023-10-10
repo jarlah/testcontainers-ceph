@@ -13,4 +13,5 @@
     </root>
 
     <logger name="org.testcontainers" level="INFO"/>
+    <logger name="software.amazon.awssdk" level="DEBUG"/>
 </configuration>
