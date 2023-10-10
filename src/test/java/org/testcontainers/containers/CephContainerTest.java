@@ -41,13 +41,13 @@ public class CephContainerTest {
 
             AmazonS3 s3client = getS3client(container);
 
-            assertThat(s3client.doesBucketExistV2("test-bucket")).isTrue();
+            assertThat(s3client.doesBucketExistV2("demo")).isTrue();
 
             URL file = this.getClass().getResource("/object_to_upload.txt");
             assertThat(file).isNotNull();
-            s3client.putObject("test-bucket", "my-objectname", file.getFile());
+            s3client.putObject("demo", "my-objectname", file.getFile());
 
-            List<S3ObjectSummary> objets = s3client.listObjectsV2("test-bucket").getObjectSummaries();
+            List<S3ObjectSummary> objets = s3client.listObjectsV2("demo").getObjectSummaries();
             assertThat(objets.size()).isEqualTo(1);
             assertThat(objets.get(0).getKey()).isEqualTo("my-objectname");
         }
@@ -105,7 +105,6 @@ public class CephContainerTest {
     }
 
     // configuringClient {
-
     private static AmazonS3 getS3client(CephContainer container) throws URISyntaxException {
         AWSCredentials credentials = new BasicAWSCredentials(
                 container.getCephAccessKey(),
