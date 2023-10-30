@@ -27,7 +27,7 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_RGW_DEFAULT_ACCESS_KEY = "demo";
 
-    private static final String CEPH_RGW_DEFAULT_SECRET_KEY = "demo";
+    private static final String CEPH_RGW_DEFAULT_SECRET_KEY = "b36361c4-1589-42f7-a369-d9dafb926d55";
 
     private static final Integer CEPH_MON_DEFAULT_PORT = 3300;
 

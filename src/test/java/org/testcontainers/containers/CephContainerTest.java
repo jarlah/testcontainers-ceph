@@ -49,7 +49,7 @@ public class CephContainerTest {
                     "rgw crypt require ssl = false"
             );
             assertThat(container.getCephAccessKey()).isEqualTo("demo");
-            assertThat(container.getCephSecretKey()).isEqualTo("demo");
+            assertThat(container.getCephSecretKey()).isSameAs("b36361c4-1589-42f7-a369-d9dafb926d55");
             assertThat(container.getCephBucket()).isEqualTo("demo");
 
             S3Client s3client = getS3client(container);
