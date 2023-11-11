@@ -17,8 +17,23 @@ on:
         default: ""
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Maven Central Repository
+        uses: actions/setup-java@v3
+        with:
+          java-version: 8
+          distribution: 'temurin'
+          java-package: 'jdk'
+          cache: 'maven'
+          server-id: ossrh
+      - name: Run tests
+        run: mvn -B -U test
+  release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v2
       - name: Set up Maven Central Repository
