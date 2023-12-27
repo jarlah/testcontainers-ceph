@@ -3,8 +3,6 @@
 name: Java CI with Maven
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
     inputs:
       releaseVersion:
