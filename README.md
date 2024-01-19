@@ -50,19 +50,38 @@ CephContainer container = new CephContainer("quay.io/ceph/demo")
 
 ### Include it into your project dependencies
 
-If you're using Maven:
 ```xml
-<dependency>
-  <groupId>io.github.jarlah</groupId>
-  <artifactId>testcontainers-ceph</artifactId>
-  <version>VERSION</version>
-</dependency>
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-bom</artifactId>
+            <version>1.19.3</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.github.jarlah</groupId>
+        <artifactId>testcontainers-ceph</artifactId>
+        <scope>test</scope>
+        <version>1.2.5</version>
+    </dependency>
+</dependencies>
 ```
 
-or if you're using Gradle:
-
-```groovy
-dependencies {
-    testImplementation 'io.github.jarlah:testcontainers-ceph:<VERSION>'
-}
-```
+The package will no longer be published to Sonatype nexus, e.g. maven central. Latest version in maven central is 1.2.5. To access newer versions or even bleeding edge directly from source tree, use version main-SNAPSHOT.
