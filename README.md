@@ -75,9 +75,9 @@ CephContainer container = new CephContainer("quay.io/ceph/demo")
         <groupId>io.github.jarlah</groupId>
         <artifactId>testcontainers-ceph</artifactId>
         <scope>test</scope>
-        <version>1.2.5</version>
+        <version>2.0.0</version>
     </dependency>
 </dependencies>
 ```
 
-The package will no longer be published to Sonatype nexus, e.g. maven central. Latest version in maven central is 1.2.5. To access newer versions or even bleeding edge directly from source tree, use version main-SNAPSHOT.
+The package will no longer be published to Sonatype nexus, e.g. maven central. Latest version in maven central is 1.2.5. To access newer versions use jitpack.
