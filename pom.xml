@@ -109,8 +109,8 @@
                         <version>${nexus-staging-maven-plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>oss.sonatype.org</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <serverId>s01.oss.sonatype.org</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                         </configuration>
                         <executions>
                             <execution>
