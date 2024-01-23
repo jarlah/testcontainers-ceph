@@ -87,3 +87,5 @@ For snapshot version, e.g. latest bleeding edge version, use jitpack by adding t
     </repository>
 </repositories>
 ```
+
+then change version of testcontainers-ceph to `main-SNAPSHOT`
