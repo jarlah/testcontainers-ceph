@@ -25,11 +25,11 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Set projects Maven version to GitHub Action GUI set version
-        run: mvn versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}"
+        run: mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}"
 
-      #- name: Publish package
-      #  run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
-      #  env:
-      #    MAVEN_USERNAME: ${{ secrets.OSS_SONATYPE_USERNAME }}
-      #    MAVEN_PASSWORD: ${{ secrets.OSS_SONATYPE_PASSWORD }}
-      #    MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - name: Publish package
+        run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
