@@ -43,19 +43,14 @@ CephContainer container = new CephContainer("quay.io/ceph/demo")
     .withCephAccessKey("secretKey");
 ```
 
-## How to use it?
+## How to get it?
 ---
 
 ### Include it into your project dependencies
 
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
+Its available in Maven Central.
 
+```xml
 <dependencyManagement>
     <dependencies>
         <dependency>
@@ -82,4 +77,13 @@ CephContainer container = new CephContainer("quay.io/ceph/demo")
 </dependencies>
 ```
 
-The package will no longer be published to Sonatype nexus, e.g. maven central. Latest version in maven central is 1.2.5. To access newer versions use jitpack.
+For snapshot version, e.g. latest bleeding edge version, use jitpack by adding the jitpack repository.
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
