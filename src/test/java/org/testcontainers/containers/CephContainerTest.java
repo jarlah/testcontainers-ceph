@@ -5,11 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
@@ -54,18 +57,31 @@ public class CephContainerTest {
 
             S3Client s3client = getS3client(container);
 
-            s3client.headBucket(HeadBucketRequest.builder().bucket("demo").build());
+            HeadBucketResponse headBucketResponse = s3client.headBucket(HeadBucketRequest.builder().bucket("demo").build());
+            assertThat(headBucketResponse.sdkHttpResponse().isSuccessful())
+                .isTrue();
+            assertThat(headBucketResponse.sdkHttpResponse().headers().get("X-RGW-Quota-Max-Buckets").get(0))
+                .isEqualTo("1000");
 
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("demo").key("my-objectname").build();
-            s3client.putObject(putObjectRequest, RequestBody.fromFile(getTestFile()));
+            final String key = "my-objectname";
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket("demo").key(key).build();
+            PutObjectResponse putObjectResponse = s3client.putObject(putObjectRequest, RequestBody.fromFile(getTestFile()));
+            assertThat(putObjectResponse.sdkHttpResponse().isSuccessful()).isTrue();
+            assertThat(putObjectResponse.eTag()).isNotNull();
+            assertThat(putObjectResponse.expiration()).isNull();
+
+            ResponseInputStream<GetObjectResponse>
+                responseInputStream = s3client.getObject(request -> request.bucket("demo").key(key));
+            assertThat(responseInputStream).hasContent("This is a file");
 
             ListObjectsV2Response objets = s3client.listObjectsV2((builder) -> builder.bucket("demo"));
             assertThat(objets.contents().size()).isEqualTo(1);
-            assertThat(objets.contents().get(0).key()).isEqualTo("my-objectname");
+            assertThat(objets.contents().get(0).key()).isEqualTo(key);
 
             assertThatThrownBy(() -> {
                 s3client.putObject(
-                        getSSECPutObjectRequest("demo", "some-objectname"),
+                        getSSECPutObjectRequest("demo", key),
                         RequestBody.fromFile(getTestFile())
                 );
             })
