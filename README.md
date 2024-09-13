@@ -78,16 +78,3 @@ Its available in Maven Central.
     </dependency>
 </dependencies>
 ```
-
-For snapshot version, e.g. latest bleeding edge version, use jitpack by adding the jitpack repository.
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-```
-
-then change version of testcontainers-ceph to `main-SNAPSHOT`
