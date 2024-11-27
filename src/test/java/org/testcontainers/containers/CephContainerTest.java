@@ -3,6 +3,7 @@ package org.testcontainers.containers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -56,6 +57,7 @@ public class CephContainerTest {
             assertThat(container.getCephAccessKey()).isEqualTo("demo");
             assertThat(container.getCephSecretKey()).isSameAs("b36361c4-1589-42f7-a369-d9dafb926d55");
             assertThat(container.getCephBucket()).isEqualTo("demo");
+            assertThat(container.getWaitStrategy()).isInstanceOf(LogMessageWaitStrategy.class);
 
             S3Client s3client = getS3client(container);
 
@@ -110,6 +112,7 @@ public class CephContainerTest {
                     "rgw verify ssl = false\n" +
                     "rgw crypt require ssl = false"
             );
+            assertThat(container.getWaitStrategy()).isInstanceOf(LogMessageWaitStrategy.class);
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
             assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
@@ -143,6 +146,7 @@ public class CephContainerTest {
                 // }
         ) {
             container.start();
+            assertThat(container.getWaitStrategy()).isInstanceOf(LogMessageWaitStrategy.class);
             assertThat(container.getCephAccessKey()).isEqualTo("testuser123");
             assertThat(container.getCephSecretKey()).isEqualTo("testpassword123");
             assertThat(container.getCephBucket()).isEqualTo("testbucket123");
@@ -170,6 +174,24 @@ public class CephContainerTest {
         }
     }
 
+    @Test
+    void testOverrideWaitingFor() {
+        DockerImageName daemonImage =
+                DockerImageName.parse("quay.io/ceph/daemon:v7.0.3-stable-7.0-quincy-centos-stream8-x86_64")
+                        .asCompatibleSubstituteFor("quay.io/ceph/demo");
+        try (
+                CephContainer container = new CephContainer(daemonImage)
+                        .withCephAccessKey("testuser123")
+                        .withCephSecretKey("testpassword123")
+                        .withCephBucket("testbucket123")
+                        .withCommand("demo");
+        ) {
+            container.waitingFor(Wait.forListeningPort());
+            container.start();
+            assertThat(container.isRunning()).isTrue();
+            assertThat(container.getWaitStrategy()).isInstanceOf(HostPortWaitStrategy.class);
+        }
+    }
     // configuringClient {
 
     private static S3Client getS3client(CephContainer container) throws URISyntaxException {
