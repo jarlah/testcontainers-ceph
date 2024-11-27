@@ -1,11 +1,14 @@
 package org.testcontainers.containers;
 
+import com.github.dockerjava.api.model.Ulimit;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Testcontainers implementation for Ceph.
@@ -39,6 +42,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_END_START_REGEX_FORMAT = ".*Bucket 's3://%s/' created\n.*";
 
+    private static final Ulimit[] DEFAULT_ULIMITS = new Ulimit[]{new Ulimit("nofile", 65536L, 65536L)};
+
     private String cephAccessKey;
 
     private String cephSecretKey;
@@ -56,6 +61,12 @@ public class CephContainer extends GenericContainer<CephContainer> {
     public CephContainer(final DockerImageName dockerImageName) {
         super(dockerImageName);
         dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
+        setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
+                .withStartupTimeout(Duration.ofMinutes(5)));
+        withCreateContainerCmdModifier(createContainerCmd ->
+                requireNonNull(createContainerCmd
+                        .getHostConfig())
+                        .withUlimits(DEFAULT_ULIMITS));
     }
 
     @Override
@@ -64,42 +75,39 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
-            "CEPH_DEMO_BUCKET",
-            this.cephBucket != null
-                ? this.cephBucket
-                : (this.cephBucket = CEPH_DEMO_BUCKET)
+                "CEPH_DEMO_BUCKET",
+                this.cephBucket != null
+                        ? this.cephBucket
+                        : (this.cephBucket = CEPH_DEMO_BUCKET)
         );
         addEnv(
-            "CEPH_DEMO_ACCESS_KEY",
-            this.cephAccessKey != null
-                ? this.cephAccessKey
-                : (this.cephAccessKey = CEPH_RGW_DEFAULT_ACCESS_KEY)
+                "CEPH_DEMO_ACCESS_KEY",
+                this.cephAccessKey != null
+                        ? this.cephAccessKey
+                        : (this.cephAccessKey = CEPH_RGW_DEFAULT_ACCESS_KEY)
         );
         addEnv(
-            "CEPH_DEMO_SECRET_KEY",
-            this.cephSecretKey != null
-                ? this.cephSecretKey
-                : (this.cephSecretKey = CEPH_RGW_DEFAULT_SECRET_KEY)
+                "CEPH_DEMO_SECRET_KEY",
+                this.cephSecretKey != null
+                        ? this.cephSecretKey
+                        : (this.cephSecretKey = CEPH_RGW_DEFAULT_SECRET_KEY)
         );
         addEnv("CEPH_PUBLIC_NETWORK", "0.0.0.0/0");
         // This needs to be 127.0.0.1, if not the demo image will not start properly
         addEnv("MON_IP", "127.0.0.1");
         // This is important because without it, we cant access ceph from http://localhost:<PORT>
         addEnv("RGW_NAME", "localhost");
-
-        setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
-                .withStartupTimeout(Duration.ofMinutes(5)));
     }
 
     public CephContainer withSslDisabled() {
         return super.withCreateContainerCmdModifier((cmd) -> {
-           cmd.withEntrypoint(
-                   "bash",
-                   "-c",
-                   "sed -i '/^rgw frontends = .*/a rgw verify ssl = false\\\n" +
-                           "rgw crypt require ssl = false' /opt/ceph-container/bin/demo;\n" +
-                           "/opt/ceph-container/bin/demo;"
-           );
+            cmd.withEntrypoint(
+                    "bash",
+                    "-c",
+                    "sed -i '/^rgw frontends = .*/a rgw verify ssl = false\\\n" +
+                            "rgw crypt require ssl = false' /opt/ceph-container/bin/demo;\n" +
+                            "/opt/ceph-container/bin/demo;"
+            );
         });
     }
 
