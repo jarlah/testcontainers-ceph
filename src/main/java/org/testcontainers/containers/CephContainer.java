@@ -61,8 +61,6 @@ public class CephContainer extends GenericContainer<CephContainer> {
     public CephContainer(final DockerImageName dockerImageName) {
         super(dockerImageName);
         dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-        setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
-                .withStartupTimeout(Duration.ofMinutes(5)));
         withCreateContainerCmdModifier(createContainerCmd ->
                 requireNonNull(createContainerCmd
                         .getHostConfig())
@@ -97,6 +95,10 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addEnv("MON_IP", "127.0.0.1");
         // This is important because without it, we cant access ceph from http://localhost:<PORT>
         addEnv("RGW_NAME", "localhost");
+        if (this.waitStrategy == DEFAULT_WAIT_STRATEGY) {
+            setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
+                    .withStartupTimeout(Duration.ofMinutes(5)));
+        }
     }
 
     public CephContainer withSslDisabled() {
