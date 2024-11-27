@@ -2,6 +2,8 @@ package org.testcontainers.containers;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -149,6 +151,24 @@ public class CephContainerTest {
         }
     }
 
+    @Test
+    void testOverrideStartupStrategy() {
+        DockerImageName daemonImage =
+                DockerImageName.parse("quay.io/ceph/daemon:v7.0.3-stable-7.0-quincy-centos-stream8-x86_64")
+                        .asCompatibleSubstituteFor("quay.io/ceph/demo");
+        try (
+                CephContainer container = new CephContainer(daemonImage)
+                        .withCephAccessKey("testuser123")
+                        .withCephSecretKey("testpassword123")
+                        .withCephBucket("testbucket123")
+                        .withCommand("demo");
+        ) {
+            container.setWaitStrategy(Wait.forListeningPort());
+            container.start();
+            assertThat(container.isRunning()).isTrue();
+            assertThat(container.getWaitStrategy()).isInstanceOf(HostPortWaitStrategy.class);
+        }
+    }
 
     // configuringClient {
 
