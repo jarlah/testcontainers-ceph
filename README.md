@@ -58,7 +58,7 @@ Its available in Maven Central.
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-bom</artifactId>
-            <version>1.19.3</version>
+            <version>1.20.4</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
