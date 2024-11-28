@@ -74,7 +74,7 @@ Its available in Maven Central.
         <groupId>io.github.jarlah</groupId>
         <artifactId>testcontainers-ceph</artifactId>
         <scope>test</scope>
-        <version>2.0.0</version>
+        <version>2.0.7</version>
     </dependency>
 </dependencies>
 ```
