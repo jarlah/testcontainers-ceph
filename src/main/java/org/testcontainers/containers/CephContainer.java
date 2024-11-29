@@ -58,6 +58,12 @@ public class CephContainer extends GenericContainer<CephContainer> {
         this(DockerImageName.parse(dockerImageName));
     }
 
+
+    /**
+     * Constructor
+     * @param dockerImageName
+     * Sets default Ulimit so the container isn't limited by docker default security (it would take 5 minutes to load)
+     */
     public CephContainer(final DockerImageName dockerImageName) {
         super(dockerImageName);
         dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
@@ -67,6 +73,11 @@ public class CephContainer extends GenericContainer<CephContainer> {
                         .withUlimits(DEFAULT_ULIMITS));
     }
 
+    /**
+     * @Override default configure of generic container
+     * set necessary env variables for Ceph
+     * Set wait strategy to wait for log if not set
+     */
     @Override
     public void configure() {
         addExposedPorts(CEPH_MON_DEFAULT_PORT, CEPH_RGW_DEFAULT_PORT);

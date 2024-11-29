@@ -43,9 +43,8 @@ class CephContainerTest {
     @Test
     void testBasicUsage() throws Exception {
         try (
-                // minioContainer {
+                // minioContainer
                 CephContainer container = new CephContainer()
-                // }
         ) {
             container.start();
             // We should not modify demo script by default
@@ -97,13 +96,13 @@ class CephContainerTest {
     @Test
     void testOverrides() throws Exception {
         try (
-                // cephOverrides {
+                // cephOverrides
                 CephContainer container = new CephContainer("quay.io/ceph/demo:latest")
                         .withCephAccessKey("testuser123")
                         .withCephSecretKey("testpassword123")
                         .withCephBucket("testbucket123")
                         .withSslDisabled()
-                // }
+
         ) {
             container.start();
             // we should have modified the demo script
@@ -137,13 +136,12 @@ class CephContainerTest {
                 DockerImageName.parse("quay.io/ceph/daemon:v7.0.3-stable-7.0-quincy-centos-stream8-x86_64")
                         .asCompatibleSubstituteFor("quay.io/ceph/demo");
         try (
-                // cephOverrides {
+                // cephOverrides
                 CephContainer container = new CephContainer(daemonImage)
                         .withCephAccessKey("testuser123")
                         .withCephSecretKey("testpassword123")
                         .withCephBucket("testbucket123")
                         .withCommand("demo")
-                // }
         ) {
             container.start();
             assertThat(container.getWaitStrategy()).isInstanceOf(LogMessageWaitStrategy.class);
@@ -155,6 +153,10 @@ class CephContainerTest {
         }
     }
 
+    /**
+     * Test that startupStrategy override works
+     * Keep validating issue<a href="https://github.com/jarlah/testcontainers-ceph/issues/176"> #176</a>
+     */
     @Test
     void testOverrideStartupStrategy() {
         DockerImageName daemonImage =
@@ -174,6 +176,10 @@ class CephContainerTest {
         }
     }
 
+    /**
+     * Test that WaitingFor override works
+     * Keep validating issue<a href="https://github.com/jarlah/testcontainers-ceph/issues/176"> #176</a>
+     */
     @Test
     void testOverrideWaitingFor() {
         DockerImageName daemonImage =
@@ -192,7 +198,7 @@ class CephContainerTest {
             assertThat(container.getWaitStrategy()).isInstanceOf(HostPortWaitStrategy.class);
         }
     }
-    // configuringClient {
+    // configuringClient
 
     private static S3Client getS3client(CephContainer container) throws URISyntaxException {
         final AwsBasicCredentials credentials = AwsBasicCredentials.create(
@@ -209,7 +215,7 @@ class CephContainerTest {
                         .build())
                 .build();
     }
-    // }
+
 
     private static String getDemoScriptFromContainer(CephContainer container) throws IOException {
         container.copyFileFromContainer("/opt/ceph-container/bin/demo", "demo-script");
