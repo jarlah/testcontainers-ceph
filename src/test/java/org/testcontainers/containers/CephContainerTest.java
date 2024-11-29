@@ -43,7 +43,6 @@ class CephContainerTest {
     @Test
     void testBasicUsage() throws Exception {
         try (
-                // minioContainer
                 CephContainer container = new CephContainer()
         ) {
             container.start();
@@ -198,7 +197,6 @@ class CephContainerTest {
             assertThat(container.getWaitStrategy()).isInstanceOf(HostPortWaitStrategy.class);
         }
     }
-    // configuringClient
 
     private static S3Client getS3client(CephContainer container) throws URISyntaxException {
         final AwsBasicCredentials credentials = AwsBasicCredentials.create(
