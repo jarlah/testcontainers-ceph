@@ -95,7 +95,6 @@ class CephContainerTest {
     @Test
     void testOverrides() throws Exception {
         try (
-                // cephOverrides
                 CephContainer container = new CephContainer("quay.io/ceph/demo:latest")
                         .withCephAccessKey("testuser123")
                         .withCephSecretKey("testpassword123")
@@ -135,7 +134,6 @@ class CephContainerTest {
                 DockerImageName.parse("quay.io/ceph/daemon:v7.0.3-stable-7.0-quincy-centos-stream8-x86_64")
                         .asCompatibleSubstituteFor("quay.io/ceph/demo");
         try (
-                // cephOverrides
                 CephContainer container = new CephContainer(daemonImage)
                         .withCephAccessKey("testuser123")
                         .withCephSecretKey("testpassword123")
