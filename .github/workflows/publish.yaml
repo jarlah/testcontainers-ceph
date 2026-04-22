@@ -50,6 +50,64 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      # Fail fast with a useful diagnosis before we burn 30s pulling Maven
+      # dependencies only to die at the sign-artifacts step. Covers the
+      # three ways the GPG setup can be wrong:
+      #   - MAVEN_GPG_PRIVATE_KEY is a public key, malformed, or missing
+      #   - the imported key is expired or revoked
+      #   - MAVEN_GPG_PASSPHRASE doesn't match the imported key
+      # Only metadata is logged (key IDs, UIDs, expiry) — never key material.
+      - name: Diagnose — GPG keyring state
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          echo "::group::GPG version"
+          gpg --version | head -2
+          echo "::endgroup::"
+
+          echo "::group::Imported secret keys"
+          gpg --list-secret-keys --keyid-format LONG || true
+          echo "::endgroup::"
+
+          SECRET_COUNT=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c '^sec:' || true)
+          if [ "$SECRET_COUNT" = "0" ]; then
+            echo "::error::No secret keys in the keyring after setup-java import."
+            echo "Most likely causes:"
+            echo "  - MAVEN_GPG_PRIVATE_KEY contains a PUBLIC key, not a private key."
+            echo "    Re-export with 'gpg --armor --export-secret-keys <KEYID>' and"
+            echo "    confirm the first line is '-----BEGIN PGP PRIVATE KEY BLOCK-----'."
+            echo "  - The secret was truncated or CRLF-mangled when pasted into the GitHub UI."
+            exit 1
+          fi
+
+          # Flag expiry / revocation up front rather than waiting for mvn gpg-sign
+          # to reject the key with a less obvious error.
+          if gpg --list-secret-keys --with-colons | awk -F: '$1=="sec" && $2=="e"' | grep -q .; then
+            echo "::error::Imported GPG key is EXPIRED. Extend the key locally with"
+            echo "  'gpg --edit-key <KEYID>' → 'expire' → new date → 'save'"
+            echo "then re-export and update the MAVEN_GPG_PRIVATE_KEY secret and the keyserver."
+            exit 1
+          fi
+          if gpg --list-secret-keys --with-colons | awk -F: '$1=="sec" && $2=="r"' | grep -q .; then
+            echo "::error::Imported GPG key is REVOKED. Generate a new keypair."
+            exit 1
+          fi
+
+          echo "::group::Signing smoke test"
+          # Batch + loopback pinentry so the passphrase comes from env, not a tty.
+          # --output /dev/null discards the ciphertext; we only care about exit code.
+          if echo "publish workflow gpg smoke test" \
+              | gpg --batch --pinentry-mode loopback \
+                    --passphrase "$MAVEN_GPG_PASSPHRASE" \
+                    --armor --sign --output /dev/null; then
+            echo "Signing test succeeded — GPG is ready for sign-artifacts."
+          else
+            echo "::error::GPG sign test failed. Most likely the MAVEN_GPG_PASSPHRASE secret"
+            echo "does not match the imported key."
+            exit 1
+          fi
+          echo "::endgroup::"
+
       - name: Configure git author for release commits
         run: |
           git config user.name  "github-actions[bot]"
