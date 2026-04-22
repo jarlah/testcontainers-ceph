@@ -10,6 +10,10 @@ on:
         description: 'Next snapshot version (e.g. 2.0.9-SNAPSHOT)'
         required: true
         default: ''
+      skipDeploy:
+        description: 'Skip the Maven Central deploy step (for retrying after a successful deploy whose post-deploy steps failed)'
+        type: boolean
+        default: false
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -18,7 +22,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - run: echo "Will release ${{ github.event.inputs.releaseversion }} and then bump main to ${{ github.event.inputs.nextSnapshotVersion }}"
+      - run: echo "Will release ${{ github.event.inputs.releaseversion }} and then bump main to ${{ github.event.inputs.nextSnapshotVersion }} (skipDeploy=${{ github.event.inputs.skipDeploy }})"
 
       - uses: actions/checkout@v4
         with:
@@ -32,13 +36,6 @@ jobs:
           if [ "${{ github.ref }}" != "refs/heads/main" ]; then
             echo "This workflow must be run from the 'main' branch (got: ${{ github.ref }})." >&2
             echo "Re-dispatch with 'Use workflow from' set to Branch: main." >&2
-            exit 1
-          fi
-
-      - name: Guard — release tag must not already exist
-        run: |
-          if git rev-parse "v${{ github.event.inputs.releaseversion }}" >/dev/null 2>&1; then
-            echo "Tag v${{ github.event.inputs.releaseversion }} already exists. Pick a new version." >&2
             exit 1
           fi
 
@@ -58,10 +55,42 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # Idempotent re-run detection. If a previous run of this workflow
+      # partially succeeded and left state behind (tag on origin, release
+      # commit on main, or the next-snapshot bump already landed), we
+      # skip the step that's already done instead of failing hard.
+      - name: Detect prior release state
+        id: state
+        run: |
+          TAG="v${{ github.event.inputs.releaseversion }}"
+          if git ls-remote --tags --exit-code origin "$TAG" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG already exists on origin — treating the release+tag step as done."
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          POM_VERSION=$(mvn --batch-mode -q help:evaluate -Dexpression=project.version -DforceStdout)
+          echo "Current pom.xml version: $POM_VERSION"
+          if [ "$POM_VERSION" = "${{ github.event.inputs.nextSnapshotVersion }}" ]; then
+            echo "bump_done=true" >> "$GITHUB_OUTPUT"
+            echo "pom.xml already at next snapshot — treating the bump step as done."
+          else
+            echo "bump_done=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Early exit — fully succeeded previously
+        if: steps.state.outputs.tag_exists == 'true' && steps.state.outputs.bump_done == 'true'
+        run: |
+          echo "Nothing to do. Tag v${{ github.event.inputs.releaseversion }} is already on origin and pom.xml is already at ${{ github.event.inputs.nextSnapshotVersion }}."
+          echo "This run is a no-op."
+
       - name: Set project version to release version
+        if: steps.state.outputs.tag_exists != 'true'
         run: mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}" -DgenerateBackupPoms=false
 
       - name: Publish package
+        if: steps.state.outputs.tag_exists != 'true' && github.event.inputs.skipDeploy != 'true'
         run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -73,6 +102,7 @@ jobs:
       # development iteration. These steps run only if the deploy succeeded.
 
       - name: Commit release pom.xml and push tag + commit atomically
+        if: steps.state.outputs.tag_exists != 'true'
         run: |
           git add pom.xml
           git commit -m "Release ${{ github.event.inputs.releaseversion }}"
@@ -80,6 +110,7 @@ jobs:
           git push --atomic origin main "v${{ github.event.inputs.releaseversion }}"
 
       - name: Bump to next snapshot version and push
+        if: steps.state.outputs.bump_done != 'true'
         run: |
           mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.nextSnapshotVersion }}" -DgenerateBackupPoms=false
           git add pom.xml
