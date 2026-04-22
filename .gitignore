@@ -2,3 +2,5 @@
 target/
 # the tests copy the demo file from the container
 demo-script
+# direnv local cache for the Nix dev shell
+.direnv/
