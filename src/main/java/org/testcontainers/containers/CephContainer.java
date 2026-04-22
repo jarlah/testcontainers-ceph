@@ -40,6 +40,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private static final String CEPH_DEMO_BUCKET = "demo";
 
+    private static final String CEPH_RGW_DEFAULT_NAME = "localhost";
+
     private static final String CEPH_END_START_REGEX_FORMAT = ".*Bucket 's3://%s/' created\n.*";
 
     private static final Ulimit[] DEFAULT_ULIMITS = new Ulimit[]{new Ulimit("nofile", 65536L, 65536L)};
@@ -49,6 +51,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
     private String cephSecretKey;
 
     private String cephBucket;
+
+    private String rgwName;
 
     public CephContainer() {
         this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_IMAGE_TAG));
@@ -104,8 +108,16 @@ public class CephContainer extends GenericContainer<CephContainer> {
         addEnv("CEPH_PUBLIC_NETWORK", "0.0.0.0/0");
         // This needs to be 127.0.0.1, if not the demo image will not start properly
         addEnv("MON_IP", "127.0.0.1");
-        // This is important because without it, we cant access ceph from http://localhost:<PORT>
-        addEnv("RGW_NAME", "localhost");
+        // Default "localhost" lets callers on the host access the RGW via the
+        // container's mapped port. Override via withRgwName(...) when you need
+        // another container on the same Docker network to reach this one by
+        // network alias — see issue #216 for the tradeoff.
+        addEnv(
+                "RGW_NAME",
+                this.rgwName != null
+                        ? this.rgwName
+                        : (this.rgwName = CEPH_RGW_DEFAULT_NAME)
+        );
         if (this.waitStrategy == DEFAULT_WAIT_STRATEGY) {
             setWaitStrategy(Wait.forLogMessage(String.format(CEPH_END_START_REGEX_FORMAT, this.cephBucket), 1)
                     .withStartupTimeout(Duration.ofMinutes(5)));
@@ -139,6 +151,23 @@ public class CephContainer extends GenericContainer<CephContainer> {
         return this;
     }
 
+    /**
+     * Override the {@code RGW_NAME} env var passed to the Ceph demo image.
+     * <br>
+     * The default, {@code "localhost"}, is what you want when the code under
+     * test runs on the host and reaches Ceph via the container's mapped port.
+     * <br>
+     * Set this to the container's network alias (or hostname) when another
+     * container on the same Docker network needs to reach Ceph by name.
+     * Note: setting this to something other than {@code "localhost"} will
+     * break host-based access via {@link #getCephUrl()} — you cannot have
+     * both access paths active at the same time with the demo image.
+     */
+    public CephContainer withRgwName(String rgwName) {
+        this.rgwName = rgwName;
+        return this;
+    }
+
     public int getCephPort() {
         return getMappedPort(CEPH_RGW_DEFAULT_PORT);
     }
@@ -157,5 +186,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     public String getCephBucket() {
         return cephBucket;
+    }
+
+    public String getRgwName() {
+        return rgwName;
     }
 }

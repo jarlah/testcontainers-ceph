@@ -9,6 +9,8 @@ import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -174,6 +176,34 @@ class CephContainerTest {
     }
 
     /**
+     * Default RGW_NAME is "localhost" so callers on the host can reach Ceph
+     * via the container's mapped port.
+     * Regression check for issue<a href="https://github.com/jarlah/testcontainers-ceph/issues/216"> #216</a>
+     */
+    @Test
+    void testDefaultRgwNameIsLocalhost() {
+        try (CephContainer container = new CephContainer()) {
+            container.configure();
+            assertThat(container.getRgwName()).isEqualTo("localhost");
+            assertThat(container.getEnvMap()).containsEntry("RGW_NAME", "localhost");
+        }
+    }
+
+    /**
+     * {@code withRgwName(...)} lets callers override RGW_NAME so another
+     * container on the same Docker network can reach Ceph by alias.
+     * Issue<a href="https://github.com/jarlah/testcontainers-ceph/issues/216"> #216</a>
+     */
+    @Test
+    void testWithRgwNameOverride() {
+        try (CephContainer container = new CephContainer().withRgwName("ceph-host")) {
+            container.configure();
+            assertThat(container.getRgwName()).isEqualTo("ceph-host");
+            assertThat(container.getEnvMap()).containsEntry("RGW_NAME", "ceph-host");
+        }
+    }
+
+    /**
      * Test that WaitingFor override works
      * Keep validating issue<a href="https://github.com/jarlah/testcontainers-ceph/issues/176"> #176</a>
      */
@@ -202,10 +232,15 @@ class CephContainerTest {
                 container.getCephSecretKey()
         );
         final StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(credentials);
+        // AWS SDK 2.30+ defaults to WHEN_SUPPORTED, which adds flexible-checksum
+        // headers to PutObject. Older Ceph RGW (latest-quincy / v17) rejects
+        // those with HTTP 400, so opt in only when required.
         return S3Client.builder()
                 .credentialsProvider(credentialsProvider)
                 .endpointOverride(container.getCephUrl())
                 .region(Region.US_EAST_1)
+                .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
+                .responseChecksumValidation(ResponseChecksumValidation.WHEN_REQUIRED)
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(true)
                         .build())
