@@ -78,9 +78,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
     }
 
     /**
-     * @Override default configure of generic container
-     * set necessary env variables for Ceph
-     * Set wait strategy to wait for log if not set
+     * Overrides the default configure() from GenericContainer to set the
+     * environment variables Ceph needs and to install a log-based wait
+     * strategy when none has been set explicitly.
      */
     @Override
     public void configure() {
@@ -162,6 +162,9 @@ public class CephContainer extends GenericContainer<CephContainer> {
      * Note: setting this to something other than {@code "localhost"} will
      * break host-based access via {@link #getCephUrl()} — you cannot have
      * both access paths active at the same time with the demo image.
+     *
+     * @param rgwName the hostname the RGW should advertise itself as
+     * @return this container for chaining
      */
     public CephContainer withRgwName(String rgwName) {
         this.rgwName = rgwName;
