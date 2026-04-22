@@ -3,7 +3,7 @@ Testcontainers Ceph
 
 ![main](https://github.com/jarlah/testcontainers-ceph/actions/workflows/maven.yml/badge.svg?branch=main)
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.jarlah/testcontainers-ceph/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.jarlah/testcontainers-ceph)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.jarlah/testcontainers-ceph?logo=apachemaven)](https://central.sonatype.com/artifact/io.github.jarlah/testcontainers-ceph)
 
 A [Testcontainers](https://www.testcontainers.org/) implementation for [Ceph](https://ceph.io).
 
