@@ -3,16 +3,44 @@ on:
   workflow_dispatch:
     inputs:
       releaseversion:
-        description: 'Release version'
+        description: 'Release version (e.g. 2.0.8)'
+        required: true
+        default: ''
+      nextSnapshotVersion:
+        description: 'Next snapshot version (e.g. 2.0.9-SNAPSHOT)'
         required: true
         default: ''
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Required so the workflow can push the release commit + tag and the
+    # subsequent next-snapshot bump back to main.
+    permissions:
+      contents: write
     steps:
-      - run: echo "Will start a Maven Central upload with version ${{ github.event.inputs.releaseversion }}"
+      - run: echo "Will release ${{ github.event.inputs.releaseversion }} and then bump main to ${{ github.event.inputs.nextSnapshotVersion }}"
 
       - uses: actions/checkout@v4
+        with:
+          # Fetch full history so tags and pushes aren't blocked by a shallow clone.
+          fetch-depth: 0
+          # Use the default GITHUB_TOKEN for subsequent git operations.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Guard — must be dispatched from main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "This workflow must be run from the 'main' branch (got: ${{ github.ref }})." >&2
+            echo "Re-dispatch with 'Use workflow from' set to Branch: main." >&2
+            exit 1
+          fi
+
+      - name: Guard — release tag must not already exist
+        run: |
+          if git rev-parse "v${{ github.event.inputs.releaseversion }}" >/dev/null 2>&1; then
+            echo "Tag v${{ github.event.inputs.releaseversion }} already exists. Pick a new version." >&2
+            exit 1
+          fi
 
       - name: Set up Maven Central Repository
         uses: actions/setup-java@v4
@@ -25,8 +53,13 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Set projects Maven version to GitHub Action GUI set version
-        run: mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}"
+      - name: Configure git author for release commits
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set project version to release version
+        run: mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}" -DgenerateBackupPoms=false
 
       - name: Publish package
         run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
@@ -34,3 +67,21 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+      # From here on the artifact is on Maven Central. Record it in git so the
+      # tag's source tree matches what shipped, then bump main for the next
+      # development iteration. These steps run only if the deploy succeeded.
+
+      - name: Commit release pom.xml and push tag + commit atomically
+        run: |
+          git add pom.xml
+          git commit -m "Release ${{ github.event.inputs.releaseversion }}"
+          git tag -a "v${{ github.event.inputs.releaseversion }}" -m "Release ${{ github.event.inputs.releaseversion }}"
+          git push --atomic origin main "v${{ github.event.inputs.releaseversion }}"
+
+      - name: Bump to next snapshot version and push
+        run: |
+          mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.nextSnapshotVersion }}" -DgenerateBackupPoms=false
+          git add pom.xml
+          git commit -m "Prepare for next development iteration: ${{ github.event.inputs.nextSnapshotVersion }}"
+          git push origin main
