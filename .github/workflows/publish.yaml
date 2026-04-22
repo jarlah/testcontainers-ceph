@@ -44,7 +44,9 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: s01.oss.sonatype.org
+          # `central` matches <publishingServerId> in pom.xml; the legacy
+          # `s01.oss.sonatype.org` host is dead (OSSRH was sunset 2025-06-30).
+          server-id: central
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
@@ -151,8 +153,11 @@ jobs:
         if: steps.state.outputs.tag_exists != 'true' && github.event.inputs.skipDeploy != 'true'
         run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
         env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          # Central Portal user token (generate at central.sonatype.com → View
+          # Account → Generate User Token). Both values are random strings;
+          # neither is your account email or password.
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       # From here on the artifact is on Maven Central. Record it in git so the
