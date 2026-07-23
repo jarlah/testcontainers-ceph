@@ -18,7 +18,7 @@ Backed by the official [`quay.io/ceph/demo`](https://quay.io/repository/ceph/dem
 
 ## Requirements
 
-- Java 11+
+- Java 17+
 - Docker (or a compatible daemon — Podman / Colima / Docker Desktop / Rancher Desktop / Testcontainers Cloud)
 
 ## Installation
@@ -241,7 +241,7 @@ new CephContainer().waitingFor(Wait.forListeningPort());
 
 ## Contributing
 
-Issues and PRs welcome. The repo ships a Nix dev shell — `nix develop` (or `direnv allow`) gives you JDK 11, Maven, and the Docker CLI, so you don't need to install the toolchain on your host.
+Issues and PRs welcome. The repo ships a Nix dev shell — `nix develop` (or `direnv allow`) gives you JDK 17, Maven, and the Docker CLI, so you don't need to install the toolchain on your host.
 
 Run the test suite with:
 
