@@ -54,6 +54,8 @@ public class CephContainer extends GenericContainer<CephContainer> {
 
     private String rgwName;
 
+    private Ulimit[] ulimits = DEFAULT_ULIMITS;
+
     public CephContainer() {
         this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_IMAGE_TAG));
     }
@@ -66,15 +68,13 @@ public class CephContainer extends GenericContainer<CephContainer> {
     /**
      * Constructor
      * @param dockerImageName
-     * Sets default Ulimit so the container isn't limited by docker default security (it would take 5 minutes to load)
+     * Applies a default Ulimit on start so the container isn't limited by docker default security
+     * (it would take 5 minutes to load). See {@link #withoutUlimits()} and {@link #withUlimits(Ulimit...)}
+     * for restricted environments.
      */
     public CephContainer(final DockerImageName dockerImageName) {
         super(dockerImageName);
         dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-        withCreateContainerCmdModifier(createContainerCmd ->
-                requireNonNull(createContainerCmd
-                        .getHostConfig())
-                        .withUlimits(DEFAULT_ULIMITS));
     }
 
     /**
@@ -85,6 +85,13 @@ public class CephContainer extends GenericContainer<CephContainer> {
     @Override
     public void configure() {
         addExposedPorts(CEPH_MON_DEFAULT_PORT, CEPH_RGW_DEFAULT_PORT);
+
+        if (ulimits != null && ulimits.length > 0) {
+            final Ulimit[] effectiveUlimits = ulimits.clone();
+            withCreateContainerCmdModifier(createContainerCmd ->
+                    requireNonNull(createContainerCmd.getHostConfig())
+                            .withUlimits(effectiveUlimits));
+        }
 
         addEnv("CEPH_DEMO_UID", CEPH_DEMO_UID);
         addEnv(
@@ -168,6 +175,39 @@ public class CephContainer extends GenericContainer<CephContainer> {
      */
     public CephContainer withRgwName(String rgwName) {
         this.rgwName = rgwName;
+        return this;
+    }
+
+    /**
+     * Do not set any ulimits on the container. Use this when the container runtime
+     * forbids changing resource limits, e.g. {@code setrlimit RLIMIT_NOFILE: Operation not permitted}.
+     * Startup may be much slower on hosts with a low default {@code nofile} limit.
+     *
+     * @return this container for chaining
+     */
+    public CephContainer withoutUlimits() {
+        this.ulimits = null;
+        return this;
+    }
+
+    /**
+     * Restore the default ulimits ({@code nofile=65536:65536}).
+     *
+     * @return this container for chaining
+     */
+    public CephContainer withDefaultUlimits() {
+        this.ulimits = DEFAULT_ULIMITS;
+        return this;
+    }
+
+    /**
+     * Replace the default ulimits with custom ones. Passing none disables ulimits.
+     *
+     * @param ulimits the ulimits to apply
+     * @return this container for chaining
+     */
+    public CephContainer withUlimits(Ulimit... ulimits) {
+        this.ulimits = ulimits == null || ulimits.length == 0 ? null : ulimits.clone();
         return this;
     }
 

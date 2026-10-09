@@ -1,7 +1,11 @@
 package org.testcontainers.containers;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Ulimit;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import java.lang.reflect.Proxy;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -200,6 +204,52 @@ class CephContainerTest {
             container.configure();
             assertThat(container.getRgwName()).isEqualTo("ceph-host");
             assertThat(container.getEnvMap()).containsEntry("RGW_NAME", "ceph-host");
+        }
+    }
+
+    private static HostConfig applyModifiers(CephContainer container) {
+        HostConfig hostConfig = new HostConfig();
+        CreateContainerCmd cmd = (CreateContainerCmd) Proxy.newProxyInstance(
+                CreateContainerCmd.class.getClassLoader(),
+                new Class<?>[]{CreateContainerCmd.class},
+                (proxy, method, args) -> "getHostConfig".equals(method.getName()) ? hostConfig : proxy
+        );
+        container.getCreateContainerCmdModifiers().forEach(m -> m.modify(cmd));
+        return hostConfig;
+    }
+
+    @Test
+    void testDefaultUlimitsApplied() {
+        try (CephContainer container = new CephContainer()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 65536L, 65536L));
+        }
+    }
+
+    @Test
+    void testWithoutUlimits() {
+        try (CephContainer container = new CephContainer().withoutUlimits()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits()).isNullOrEmpty();
+        }
+    }
+
+    @Test
+    void testCustomUlimits() {
+        try (CephContainer container = new CephContainer().withUlimits(new Ulimit("nofile", 1024L, 2048L))) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 1024L, 2048L));
+        }
+    }
+
+    @Test
+    void testWithDefaultUlimitsRestoresDefault() {
+        try (CephContainer container = new CephContainer().withoutUlimits().withDefaultUlimits()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 65536L, 65536L));
         }
     }
 
