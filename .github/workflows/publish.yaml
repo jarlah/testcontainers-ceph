@@ -174,6 +174,9 @@ jobs:
         run: |
           git add pom.xml
           git commit -m "Release ${{ github.event.inputs.releaseversion }}"
+          # main may have moved while the (slow) deploy ran, e.g. a PR merged
+          # meanwhile. Replay the release commit on top of it, then tag the result.
+          git pull --rebase origin main
           git tag -a "v${{ github.event.inputs.releaseversion }}" -m "Release ${{ github.event.inputs.releaseversion }}"
           git push --atomic origin main "v${{ github.event.inputs.releaseversion }}"
 
@@ -183,4 +186,5 @@ jobs:
           ./mvnw --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.nextSnapshotVersion }}" -DgenerateBackupPoms=false
           git add pom.xml
           git commit -m "Prepare for next development iteration: ${{ github.event.inputs.nextSnapshotVersion }}"
+          git pull --rebase origin main
           git push origin main
