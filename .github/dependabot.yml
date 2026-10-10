@@ -10,3 +10,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 20
+    ignore:
+      # Maven 3.10.0 leaves a stray maven-metadata-local.xml in the Central
+      # bundle and breaks releases. Keep the wrapper on 3.9.x (see publish.yaml).
+      - dependency-name: "org.apache.maven:apache-maven"
+        versions: [">=3.10.0"]
