@@ -115,6 +115,11 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # Maven is pinned via the wrapper (.mvn/wrapper/maven-wrapper.properties) on
+      # purpose: Maven 3.10.0 leaves a stray maven-metadata-local.xml in the Central
+      # bundle, which Central rejects ("content that does NOT have a .pom file").
+      # Always use ./mvnw in this workflow, never the runner's `mvn`.
+      #
       # Idempotent re-run detection. If a previous run of this workflow
       # partially succeeded and left state behind (tag on origin, release
       # commit on main, or the next-snapshot bump already landed), we
@@ -130,7 +135,7 @@ jobs:
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-          POM_VERSION=$(mvn --batch-mode -q help:evaluate -Dexpression=project.version -DforceStdout)
+          POM_VERSION=$(./mvnw --batch-mode -q help:evaluate -Dexpression=project.version -DforceStdout)
           echo "Current pom.xml version: $POM_VERSION"
           if [ "$POM_VERSION" = "${{ github.event.inputs.nextSnapshotVersion }}" ]; then
             echo "bump_done=true" >> "$GITHUB_OUTPUT"
@@ -147,11 +152,11 @@ jobs:
 
       - name: Set project version to release version
         if: steps.state.outputs.tag_exists != 'true'
-        run: mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}" -DgenerateBackupPoms=false
+        run: ./mvnw --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}" -DgenerateBackupPoms=false
 
       - name: Publish package
         if: steps.state.outputs.tag_exists != 'true' && github.event.inputs.skipDeploy != 'true'
-        run: mvn --batch-mode clean deploy -P central-deploy -DskipTests=true
+        run: ./mvnw --batch-mode clean deploy -P central-deploy -DskipTests=true
         env:
           # Central Portal user token (generate at central.sonatype.com → View
           # Account → Generate User Token). Both values are random strings;
@@ -175,7 +180,7 @@ jobs:
       - name: Bump to next snapshot version and push
         if: steps.state.outputs.bump_done != 'true'
         run: |
-          mvn --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.nextSnapshotVersion }}" -DgenerateBackupPoms=false
+          ./mvnw --batch-mode versions:set "-DnewVersion=${{ github.event.inputs.nextSnapshotVersion }}" -DgenerateBackupPoms=false
           git add pom.xml
           git commit -m "Prepare for next development iteration: ${{ github.event.inputs.nextSnapshotVersion }}"
           git push origin main
