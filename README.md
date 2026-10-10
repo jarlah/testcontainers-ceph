@@ -190,6 +190,16 @@ try (
 
 > ⚠️ The demo image's RGW can only serve one hostname at a time. If you set `withRgwName(...)` to something other than `localhost`, host-based access via `getCephUrl()` will stop working for that container. Pick whichever path your test needs.
 
+### Ulimits (restricted Docker environments)
+
+By default the container is started with `nofile=65536:65536`. If your runtime forbids this
+(e.g. `setrlimit RLIMIT_NOFILE: Operation not permitted`), opt out or customize:
+
+```java
+new CephContainer().withoutUlimits();
+new CephContainer().withUlimits(new Ulimit("nofile", 4096L, 4096L));
+```
+
 ## Lifecycle
 
 ### JUnit 5 — shared across all tests in the class

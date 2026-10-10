@@ -1,7 +1,12 @@
 package org.testcontainers.containers;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Ulimit;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import java.lang.reflect.Proxy;
+import java.time.Duration;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -200,6 +205,82 @@ class CephContainerTest {
             container.configure();
             assertThat(container.getRgwName()).isEqualTo("ceph-host");
             assertThat(container.getEnvMap()).containsEntry("RGW_NAME", "ceph-host");
+        }
+    }
+
+    private static HostConfig applyModifiers(CephContainer container) {
+        HostConfig hostConfig = new HostConfig();
+        CreateContainerCmd cmd = (CreateContainerCmd) Proxy.newProxyInstance(
+                CreateContainerCmd.class.getClassLoader(),
+                new Class<?>[]{CreateContainerCmd.class},
+                (proxy, method, args) -> "getHostConfig".equals(method.getName()) ? hostConfig : proxy
+        );
+        container.getCreateContainerCmdModifiers().forEach(m -> m.modify(cmd));
+        return hostConfig;
+    }
+
+    private static Ulimit[] startAndInspectUlimits(CephContainer container) {
+        // Any log output is enough: we only need the container created, not Ceph fully up.
+        container.waitingFor(Wait.forLogMessage(".*", 1).withStartupTimeout(Duration.ofMinutes(2)));
+        try (CephContainer c = container) {
+            c.start();
+            return c.getDockerClient().inspectContainerCmd(c.getContainerId())
+                    .exec().getHostConfig().getUlimits();
+        }
+    }
+
+    @Test
+    void testDefaultUlimitsOnRunningContainer() {
+        assertThat(startAndInspectUlimits(new CephContainer()))
+                .containsExactly(new Ulimit("nofile", 65536L, 65536L));
+    }
+
+    @Test
+    void testCustomUlimitsOnRunningContainer() {
+        assertThat(startAndInspectUlimits(new CephContainer().withUlimits(new Ulimit("nofile", 4096L, 8192L))))
+                .containsExactly(new Ulimit("nofile", 4096L, 8192L));
+    }
+
+    @Test
+    void testWithoutUlimitsOnRunningContainer() {
+        // Docker reports the daemon default (or nothing); the 65536 default must not be forced.
+        Ulimit[] ulimits = startAndInspectUlimits(new CephContainer().withoutUlimits());
+        assertThat(ulimits == null ? new Ulimit[0] : ulimits)
+                .doesNotContain(new Ulimit("nofile", 65536L, 65536L));
+    }
+
+    @Test
+    void testDefaultUlimitsApplied() {
+        try (CephContainer container = new CephContainer()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 65536L, 65536L));
+        }
+    }
+
+    @Test
+    void testWithoutUlimits() {
+        try (CephContainer container = new CephContainer().withoutUlimits()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits()).isNullOrEmpty();
+        }
+    }
+
+    @Test
+    void testCustomUlimits() {
+        try (CephContainer container = new CephContainer().withUlimits(new Ulimit("nofile", 1024L, 2048L))) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 1024L, 2048L));
+        }
+    }
+
+    @Test
+    void testWithDefaultUlimitsRestoresDefault() {
+        try (CephContainer container = new CephContainer().withoutUlimits().withDefaultUlimits()) {
+            container.configure();
+            assertThat(applyModifiers(container).getUlimits())
+                    .containsExactly(new Ulimit("nofile", 65536L, 65536L));
         }
     }
 
